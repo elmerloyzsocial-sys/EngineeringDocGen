@@ -194,29 +194,42 @@
     };
 
     function askAI(idx) {
-      const content = document.getElementById(`sec${idx}`).innerText.trim();
-      let suggestion = "";
-      if (!content) {
-        suggestion = "Try to start with a simple statement about this section. For example: 'This report analyzes ...'";
-      } else if (content.length < 30) {
-        suggestion = "Consider expanding your statement with more detail. Provide additional context or examples.";
-      } else if (/requirement|design|test|interface|verification|procedure|update|change/i.test(content)) {
-        suggestion = "Ensure you clearly list requirements, design/test procedures, interface details, or update/change reasons. Use bullet points for clarity if needed.";
-      } else if (/conclusion|summary|recommend|acceptance|approval|sign off/i.test(content)) {
-        suggestion = "Summarize your main findings, recommendations, acceptance criteria, or approval process concisely.";
-      } else {
-        suggestion = "Your statement looks good. Double-check for clarity, completeness, and technical accuracy.";
-      }
-      showAIPopup(suggestion);
+  const content = document.getElementById(`sec${idx}`).innerText.trim();
+  const sectionTitle = templates[currentDocType][idx].section.toLowerCase();
+  let suggestion = "";
+  // Section-specific advice
+  if (!content) {
+    suggestion = `Start by writing a draft for the "${sectionTitle}" section. What is the main point you want to communicate?`;
+  } else if (content.length < 40) {
+    suggestion = "Try to add more detail. Expand on your ideas and provide specific examples or context.";
+  } else if (["requirements","test steps","test equipment","design","update details","interface description"].some(s => sectionTitle.includes(s))) {
+    suggestion = "Consider using bullet points or numbered lists for clarity. Ensure each item is concise and covers all necessary details.";
+  } else if (["background","scope","purpose","objective"].some(s => sectionTitle.includes(s))) {
+    suggestion = "Provide clear context: why is this section important? What are its boundaries or goals?";
+  } else if (["results","expected results","findings"].some(s => sectionTitle.includes(s))) {
+    suggestion = "Summarize the main outcomes. Include quantitative data if available, and compare results to expectations.";
+  } else if (["conclusion","recommendations","pass/fail criteria","approval","sign off"].some(s => sectionTitle.includes(s))) {
+    suggestion = "State the final judgment, any recommendations, and who is responsible for approval. Make sure your conclusion is supported by the previous sections.";
+  } else if (["references","documentation changes"].some(s => sectionTitle.includes(s))) {
+    suggestion = "List sources or documentation clearly. Use a consistent citation format.";
+  } else {
+    // General analysis
+    const sentences = content.split(/[.!?]/).filter(s => s.trim().length);
+    if (sentences.length < 2) {
+      suggestion = "Consider splitting your text into multiple sentences for clarity and readability.";
+    } else if (/should|must|shall|required|verify/i.test(content)) {
+      suggestion = "Double-check that all requirements are testable and clearly stated.";
+    } else {
+      suggestion = "Review for clarity, technical accuracy, and completeness. If possible, get feedback from a peer.";
     }
-    function showAIPopup(text) {
-      document.getElementById('aiContent').innerHTML = text;
-      document.getElementById('aiPopup').classList.remove('hidden');
-    }
-    document.getElementById('closeAIPopupBtn').addEventListener('click', function() {
-      document.getElementById('aiPopup').classList.add('hidden');
-      document.getElementById('aiContent').innerHTML = "";
-    });
+  }
+  showAIPopup(suggestion);
+}
+
+function showAIPopup(text) {
+  document.getElementById('aiContent').innerHTML = text;
+  document.getElementById('aiPopup').classList.remove('hidden');
+};
   </script>
 </body>
 </html>
