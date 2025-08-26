@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Engineering Document Generator</title>
+  <style>
+    body { font-family: "Courier New", Courier, monospace; margin: 40px; }
+    .container { max-width: 700px; margin: auto; }
+    .section { margin-bottom: 20px; }
+    textarea { width: 100%; min-height: 60px; font-family: inherit; }
+    #compiled, .review-doc { white-space: pre-wrap; background: #f7f7f7; padding: 20px; border-radius: 5px; font-family: inherit; }
+    button { padding: 10px 20px; font-size: 1rem; margin-right: 10px; margin-bottom: 10px;}
+    label { font-weight: bold; }
+    .hidden { display: none; }
+    .doc-list { margin-bottom: 20px; }
+    .doc-list-item { margin-bottom: 10px; }
+    .review-title { font-size: 1.1em; font-weight: bold; }
+  </style>
+  <!-- (Google API scripts omitted for brevity; see previous solution if needed) -->
+</head>
+<body>
+  <div class="container">
+    <h1>Engineering Document Generator</h1>
+    <div id="step1" class="section">
+      <label for="docType">Choose document type:</label>
+      <select id="docType">
+        <option value="">-- Select --</option>
+        <option value="Technical Report">Technical Report</option>
+        <option value="Specification">Specification</option>
+        <option value="Risk Assessment">Risk Assessment</option>
+        <option value="Project Charter">Project Charter</option>
+        <option value="Safety Report">Safety Report</option>
+        <option value="Change Request">Change Request</option>
+        <option value="Design Review">Design Review</option>
+        <option value="First of Class Test Report">First of Class Test Report</option>
+        <option value="VCRM Update">VCRM Update</option>
+        <option value="As Built Update">As Built Update</option>
+      </select>
+      <button onclick="startDocument()">Start</button>
+      <button onclick="showReview()">Review Previous Documents</button>
+    </div>
+
+    <form id="docForm" class="hidden" onsubmit="compileDocument(event)">
+      <div id="sections"></div>
+      <button type="submit">Compile Document</button>
+    </form>
+
+    <div id="compiled" class="hidden"></div>
+    <button id="saveDriveBtn" class="hidden" onclick="saveToDrive()">Save to Google Drive</button>
+    <div id="driveStatus" style="margin-top:10px;"></div>
+    <div id="reviewSection" class="hidden"></div>
+  </div>
+
+  <script>
+    // Document templates and samples omitted for brevity (see previous solution)
+    const templates = { /* ... as above ... */ };
+
+    let currentDocType = "";
+    let compiledText = "";
+
+    // Helper for local storage
+    function saveDocumentLocally(docType, sections, output) {
+      const docs = JSON.parse(localStorage.getItem('engineeringDocs') || '[]');
+      docs.push({
+        type: docType,
+        sections: sections,
+        compiled: output,
+        date: new Date().toISOString()
+      });
+      localStorage.setItem('engineeringDocs', JSON.stringify(docs));
+    }
+
+    function startDocument() {
+      currentDocType = document.getElementById('docType').value;
+      if (!currentDocType) return alert('Please select a document type.');
+      document.getElementById('step1').classList.add("hidden");
+      document.getElementById('docForm').classList.remove("hidden");
+      document.getElementById('saveDriveBtn').classList.add("hidden");
+      document.getElementById('compiled').classList.add("hidden");
+      document.getElementById('reviewSection').classList.add("hidden");
+      document.getElementById('driveStatus').textContent = "";
+
+      // Render sections
+      const sectionsDiv = document.getElementById('sections');
+      sectionsDiv.innerHTML = '';
+      templates[currentDocType].forEach((sec, idx) => {
+        const s = document.createElement('div');
+        s.className = "section";
+        s.innerHTML = `<label>${sec.prompt}</label>
+          <textarea name="sec${idx}" required>${sec.sample}</textarea>`;
+        sectionsDiv.appendChild(s);
+      });
+    }
+
+    function compileDocument(e) {
+      e.preventDefault();
+      const form = document.getElementById('docForm');
+      const compiledDiv = document.getElementById('compiled');
+      let output = `# ${currentDocType}\n\n`;
+      const sections = templates[currentDocType];
+      let sectionContents = [];
+      sections.forEach((sec, idx) => {
+        const content = form[`sec${idx}`].value;
+        output += `## ${sec.section}\n${content}\n\n`;
+        sectionContents.push({section: sec.section, content});
+      });
+      compiledText = output;
+      form.classList.add("hidden");
+      compiledDiv.classList.remove("hidden");
+      compiledDiv.textContent = output;
+      document.getElementById('saveDriveBtn').classList.remove("hidden");
+      saveDocumentLocally(currentDocType, sectionContents, output);
+    }
+
+    // --- Review Previous Documents ---
+    function showReview() {
+      document.getElementById('step1').classList.add("hidden");
+      document.getElementById('docForm').classList.add("hidden");
+      document.getElementById('compiled').classList.add("hidden");
+      document.getElementById('saveDriveBtn').classList.add("hidden");
+      document.getElementById('reviewSection').classList.remove("hidden");
+      renderReviewList();
+    }
+
+    function renderReviewList() {
+      const docs = JSON.parse(localStorage.getItem('engineeringDocs') || '[]');
+      const reviewDiv = document.getElementById('reviewSection');
+      if (docs.length === 0) {
+        reviewDiv.innerHTML = "<p>No previous documents found.</p><button onclick='backToMain()'>Back</button>";
+        return;
+      }
+      let html = "<div class='doc-list'>";
+      docs.forEach((doc, idx) => {
+        html += `<div class='doc-list-item'>
+          <span class='review-title'>${doc.type}</span> (${(new Date(doc.date)).toLocaleString()})
+          <button onclick='viewDocument(${idx})'>View</button>
+          <button onclick='deleteDocument(${idx})'>Delete</button>
+        </div>`;
+      });
+      html += "</div><button onclick='backToMain()'>Back</button><div id='docView'></div>";
+      reviewDiv.innerHTML = html;
+    }
+
+    function viewDocument(idx) {
+      const docs = JSON.parse(localStorage.getItem('engineeringDocs') || '[]');
+      const doc = docs[idx];
+      document.getElementById('docView').innerHTML = `<div class='review-doc'>${doc.compiled}</div>`;
+    }
+
+    function deleteDocument(idx) {
+      if (!confirm("Delete this document?")) return;
+      let docs = JSON.parse(localStorage.getItem('engineeringDocs') || '[]');
+      docs.splice(idx, 1);
+      localStorage.setItem('engineeringDocs', JSON.stringify(docs));
+      renderReviewList();
+    }
+
+    function backToMain() {
+      document.getElementById('reviewSection').classList.add("hidden");
+      document.getElementById('step1').classList.remove("hidden");
+    }
+
+    // Google Drive integration omitted for brevity (see previous solution)
+    // ...
+  </script>
+</body>
+</html>
