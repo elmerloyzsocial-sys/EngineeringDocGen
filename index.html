@@ -49,7 +49,7 @@
     <div id="aiPopup" class="hidden">
       <h3>AI Suggestion</h3>
       <div id="aiContent"></div>
-      <button onclick="closeAIPopup()">Close</button>
+      <button id="closeAIPopupBtn">Close</button>
     </div>
   </div>
 
@@ -155,9 +155,11 @@
       document.getElementById('aiContent').innerHTML = text;
       document.getElementById('aiPopup').classList.remove('hidden');
     }
-    function closeAIPopup() {
+    // Reliable event binding for Close button
+    document.getElementById('closeAIPopupBtn').onclick = function() {
       document.getElementById('aiPopup').classList.add('hidden');
-    }
+      document.getElementById('aiContent').innerHTML = "";
+    };
   </script>
 </body>
 </html>
