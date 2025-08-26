@@ -61,7 +61,7 @@
   </div>
 
   <script>
-    // Document templates
+    // Expanded engineering and systems engineering document templates
     const templates = {
       "Technical Report": [
         { section: "Title", prompt: "Enter the title of the report:", sample: "Technical Report: Analysis of Water Quality", comment:"Use a descriptive title." },
@@ -79,6 +79,32 @@
         { section: "Requirements", prompt: "List requirements:", sample: "1. System must maintain 20-22°C\n2. Airflow must meet ASHRAE 62.1 standards.", comment:"List all requirements." },
         { section: "Design", prompt: "Describe the design:", sample: "Centralized system with variable air volume control.", comment:"Describe design features." },
         { section: "Testing", prompt: "Describe testing procedures:", sample: "System must pass pressure and leak tests upon installation.", comment:"Describe testing." }
+      ],
+      "First of Class Test Procedure": [
+        { section: "Title", prompt: "Test procedure title:", sample: "First of Class Test Procedure: Vehicle Brake System", comment: "State the name of the procedure." },
+        { section: "Purpose", prompt: "Purpose of the procedure:", sample: "To verify the brake system meets all design and safety requirements.", comment: "Why is this test performed?" },
+        { section: "Scope", prompt: "Scope of testing:", sample: "Testing applies to the first completed production vehicle.", comment: "Define the boundaries." },
+        { section: "Test Equipment", prompt: "Equipment required:", sample: "Brake tester, data logger, speed sensors.", comment: "List test equipment." },
+        { section: "Test Steps", prompt: "Step-by-step procedure:", sample: "1. Inspect brake components. 2. Conduct static test. 3. Perform dynamic braking test at designated speeds.", comment: "List all steps clearly." },
+        { section: "Expected Results", prompt: "Expected results:", sample: "Brakes must stop vehicle within required distance and show no abnormal wear.", comment: "Define what results are expected." },
+        { section: "Pass/Fail Criteria", prompt: "Pass/fail criteria:", sample: "Test passes if stopping distance and system checks meet specification.", comment: "How do you define pass/fail?" },
+        { section: "Sign Off", prompt: "Sign-off names and roles:", sample: "Lead Test Engineer, QA Manager", comment: "Who approves?" }
+      ],
+      "VCRM Update": [
+        { section: "Title", prompt: "Update title:", sample: "VCRM Update: Compliance Requirement Change", comment:"Name the update." },
+        { section: "Background", prompt: "Background of update:", sample: "New regulatory requirements for emissions have been published.", comment:"Why is update needed?" },
+        { section: "Change Description", prompt: "Describe changes:", sample: "Added new emissions limits to compliance matrix.", comment:"What is changing?" },
+        { section: "Affected Requirements", prompt: "List affected requirements:", sample: "REQ-009, REQ-022", comment:"Which requirements are affected?" },
+        { section: "Verification Plan", prompt: "Verification plan:", sample: "Schedule laboratory tests and update compliance documentation.", comment:"How will you check the change?" },
+        { section: "Approval", prompt: "Approval names:", sample: "Regulatory Lead, Engineering Manager", comment:"Who approves the update?" }
+      ],
+      "As Built Update": [
+        { section: "Title", prompt: "Update title:", sample: "As Built Update: Chiller Pipe Layout", comment:"Name the update." },
+        { section: "Background", prompt: "Background for the update:", sample: "Field routing of pipes differed from design drawings due to obstacles.", comment:"Why was update needed?" },
+        { section: "Update Details", prompt: "Details of update:", sample: "Pipe B rerouted above ceiling grid, supports added.", comment:"Explain what changed." },
+        { section: "Documentation Changes", prompt: "Documentation updates:", sample: "Revised layout drawing 115-C. Updated bill of materials.", comment:"What documentation changed?" },
+        { section: "Compliance", prompt: "Compliance status:", sample: "All changes comply with project specifications and safety codes.", comment:"Are changes compliant?" },
+        { section: "Sign Off", prompt: "Sign-off names:", sample: "Project Engineer, Construction Supervisor", comment:"Who signs off?" }
       ]
       // Add other document types as needed
     };
@@ -149,12 +175,12 @@
         suggestion = "Try to start with a simple statement about this section. For example: 'This report analyzes ...'";
       } else if (content.length < 30) {
         suggestion = "Consider expanding your statement with more detail. Provide additional context or examples.";
-      } else if (/requirement|design|test/i.test(content)) {
-        suggestion = "Ensure you clearly list any requirements, design principles, or test procedures. Try bullet points for clarity.";
-      } else if (/conclusion|summary|recommend/i.test(content)) {
-        suggestion = "Summarize your main findings or recommendations in a clear, concise way.";
+      } else if (/requirement|design|test|interface|verification|procedure|update|change/i.test(content)) {
+        suggestion = "Ensure you clearly list requirements, design/test procedures, interface details, or update/change reasons. Use bullet points for clarity if needed.";
+      } else if (/conclusion|summary|recommend|acceptance|approval|sign off/i.test(content)) {
+        suggestion = "Summarize your main findings, recommendations, acceptance criteria, or approval process concisely.";
       } else {
-        suggestion = "Your statement looks good. Consider double-checking for clarity, completeness, and technical accuracy.";
+        suggestion = "Your statement looks good. Double-check for clarity, completeness, and technical accuracy.";
       }
       showAIPopup(suggestion);
     }
@@ -162,7 +188,6 @@
       document.getElementById('aiContent').innerHTML = text;
       document.getElementById('aiPopup').classList.remove('hidden');
     }
-    // Reliable event binding for Close button
     document.getElementById('closeAIPopupBtn').addEventListener('click', function() {
       document.getElementById('aiPopup').classList.add('hidden');
       document.getElementById('aiContent').innerHTML = "";
