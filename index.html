@@ -51,6 +51,7 @@
     </form>
 
     <div id="compiled" class="hidden"></div>
+    <button type="button" id="downloadTxtBtn" class="hidden">Download as TXT</button>
     <button type="button" id="backBtnCompiled" class="hidden">Back to Home</button>
 
     <div id="aiPopup" class="hidden">
@@ -131,6 +132,7 @@
       document.getElementById('step1').classList.add("hidden");
       document.getElementById('docForm').classList.remove("hidden");
       document.getElementById('compiled').classList.add("hidden");
+      document.getElementById('downloadTxtBtn').classList.add("hidden");
       document.getElementById('backBtnCompiled').classList.add("hidden");
       renderSections();
     }
@@ -160,6 +162,7 @@
       document.getElementById('docForm').classList.add("hidden");
       document.getElementById('compiled').classList.remove("hidden");
       document.getElementById('compiled').textContent = output;
+      document.getElementById('downloadTxtBtn').classList.remove("hidden");
       document.getElementById('backBtnCompiled').classList.remove("hidden");
     };
 
@@ -168,12 +171,26 @@
       document.getElementById('docForm').classList.add("hidden");
       document.getElementById('step1').classList.remove("hidden");
       document.getElementById('compiled').classList.add("hidden");
+      document.getElementById('downloadTxtBtn').classList.add("hidden");
       document.getElementById('backBtnCompiled').classList.add("hidden");
     };
     document.getElementById('backBtnCompiled').onclick = function() {
       document.getElementById('compiled').classList.add("hidden");
       document.getElementById('step1').classList.remove("hidden");
+      document.getElementById('downloadTxtBtn').classList.add("hidden");
       document.getElementById('backBtnCompiled').classList.add("hidden");
+    };
+
+    // Download as TXT feature
+    document.getElementById('downloadTxtBtn').onclick = function() {
+      const filename = (currentDocType || "document") + ".txt";
+      const blob = new Blob([compiledText], { type: "text/plain" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     };
 
     function askAI(idx) {
