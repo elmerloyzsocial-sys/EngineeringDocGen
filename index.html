@@ -16,7 +16,7 @@
     .doc-list-item { margin-bottom: 10px; }
     .review-title { font-size: 1.1em; font-weight: bold; }
   </style>
-  <!-- (Google API scripts omitted for brevity; see previous solution if needed) -->
+  <!-- Google API scripts can be added here if needed -->
 </head>
 <body>
   <div class="container">
@@ -36,11 +36,11 @@
         <option value="VCRM Update">VCRM Update</option>
         <option value="As Built Update">As Built Update</option>
       </select>
-      <button onclick="startDocument()">Start</button>
-      <button onclick="showReview()">Review Previous Documents</button>
+      <button id="startBtn">Start</button>
+      <button id="reviewBtn">Review Previous Documents</button>
     </div>
 
-    <form id="docForm" class="hidden" onsubmit="compileDocument(event)">
+    <form id="docForm" class="hidden">
       <div id="sections"></div>
       <button type="submit">Compile Document</button>
     </form>
@@ -52,8 +52,89 @@
   </div>
 
   <script>
-    // Document templates and samples omitted for brevity (see previous solution)
-    const templates = { /* ... as above ... */ };
+    // Document templates and samples
+    const templates = {
+      "Technical Report": [
+        { section: "Title", prompt: "Enter the title of the report:", sample: "Technical Report: Analysis of Water Quality" },
+        { section: "Abstract", prompt: "Write a brief summary (abstract):", sample: "This report summarizes the findings of water quality analysis conducted in August 2025." },
+        { section: "Introduction", prompt: "Describe the background and objectives:", sample: "The purpose of this report is to evaluate the water quality of the local reservoir." },
+        { section: "Methodology", prompt: "Explain the methods used:", sample: "Samples were collected and analyzed using standard EPA methods." },
+        { section: "Results", prompt: "Summarize the results found:", sample: "Results show acceptable levels of contaminants within regulatory limits." },
+        { section: "Discussion", prompt: "Discuss the implications:", sample: "Results indicate safe conditions but ongoing monitoring is recommended." },
+        { section: "Conclusion", prompt: "Provide the conclusion:", sample: "Water quality is currently safe for consumption." },
+        { section: "References", prompt: "List references:", sample: "EPA Method 525.2, Water Safety Guidelines 2024." }
+      ],
+      "Specification": [
+        { section: "Title", prompt: "Enter the specification title:", sample: "Specification for HVAC System" },
+        { section: "Scope", prompt: "Define the scope:", sample: "This specification covers design and installation requirements for HVAC in commercial buildings." },
+        { section: "Requirements", prompt: "List requirements:", sample: "1. System must maintain 20-22°C\n2. Airflow must meet ASHRAE 62.1 standards." },
+        { section: "Design", prompt: "Describe the design:", sample: "Centralized system with variable air volume control." },
+        { section: "Testing", prompt: "Describe testing procedures:", sample: "System must pass pressure and leak tests upon installation." }
+      ],
+      "Risk Assessment": [
+        { section: "Title", prompt: "Report title:", sample: "Risk Assessment: Construction Site" },
+        { section: "Objective", prompt: "State objectives:", sample: "Identify and assess potential hazards at the site." },
+        { section: "Methodology", prompt: "Describe risk assessment method:", sample: "Risk matrix and on-site hazard survey conducted." },
+        { section: "Findings", prompt: "Summarize findings:", sample: "Major risks include falling objects and machinery operation." },
+        { section: "Mitigation Measures", prompt: "List mitigation measures:", sample: "Implement PPE usage, daily safety briefings, and site fencing." },
+        { section: "Conclusion", prompt: "Provide conclusion:", sample: "Residual risk is acceptable with controls in place." }
+      ],
+      "Project Charter": [
+        { section: "Project Name", prompt: "Project name:", sample: "New Bridge Construction" },
+        { section: "Background", prompt: "Project background:", sample: "The city requires a new bridge to improve traffic flow." },
+        { section: "Objectives", prompt: "Project objectives:", sample: "Complete bridge construction by Dec 2026 within budget." },
+        { section: "Scope", prompt: "Define project scope:", sample: "Design, build, and commission a four-lane bridge." },
+        { section: "Stakeholders", prompt: "List stakeholders:", sample: "City council, local residents, contractors, suppliers." },
+        { section: "Budget", prompt: "State estimated budget:", sample: "$50 million" },
+        { section: "Timeline", prompt: "Project timeline:", sample: "Start: Jan 2026; End: Dec 2026" }
+      ],
+      "Safety Report": [
+        { section: "Title", prompt: "Report title:", sample: "Safety Report: Manufacturing Facility" },
+        { section: "Executive Summary", prompt: "Write summary:", sample: "Facility safety performance improved over last year." },
+        { section: "Incidents", prompt: "Describe incidents:", sample: "Two minor injuries reported, no fatalities." },
+        { section: "Corrective Actions", prompt: "List actions taken:", sample: "Implemented new safety signage and PPE protocol." },
+        { section: "Recommendations", prompt: "Provide recommendations:", sample: "Increase safety training frequency." }
+      ],
+      "Change Request": [
+        { section: "Title", prompt: "Change request title:", sample: "Change Request: Extend Project Deadline" },
+        { section: "Description", prompt: "Describe the change:", sample: "Request to extend the project deadline by 2 months due to supply delays." },
+        { section: "Impact Analysis", prompt: "Analyze impact:", sample: "Minimal impact on budget, but stakeholders must be notified." },
+        { section: "Approval", prompt: "Approval required from:", sample: "Project Manager, Sponsor" }
+      ],
+      "Design Review": [
+        { section: "Title", prompt: "Review title:", sample: "Design Review: Solar Panel Array" },
+        { section: "Purpose", prompt: "Purpose of review:", sample: "Assess design for compliance with specifications." },
+        { section: "Design Overview", prompt: "Provide overview:", sample: "System includes 100 panels, grid-tied, with inverter." },
+        { section: "Issues Identified", prompt: "List issues:", sample: "Potential shading in northeast corner during winter." },
+        { section: "Recommendations", prompt: "Provide recommendations:", sample: "Relocate panels to maximize sunlight exposure." },
+        { section: "Conclusion", prompt: "Conclusion:", sample: "Design meets requirements with minor modifications." }
+      ],
+      "First of Class Test Report": [
+        { section: "Title", prompt: "Enter the test report title:", sample: "FCTR: Rail Vehicle Brake Test" },
+        { section: "Purpose", prompt: "Describe the purpose of the test:", sample: "Verify brake system meets design criteria." },
+        { section: "Test Description", prompt: "Detailed description:", sample: "Test conducted on prototype vehicle under dry conditions." },
+        { section: "Test Results", prompt: "Summarize results:", sample: "Braking distance within required limit." },
+        { section: "Analysis", prompt: "Analysis of results:", sample: "System performs as expected; minor adjustment needed." },
+        { section: "Conclusion", prompt: "Conclusion and recommendations:", sample: "Brake system approved pending adjustment." },
+        { section: "Sign Off", prompt: "Sign-off names:", sample: "Lead Engineer, QA Manager" }
+      ],
+      "VCRM Update": [
+        { section: "Title", prompt: "Update title:", sample: "VCRM Update: New Environmental Regulation" },
+        { section: "Background", prompt: "Background of update:", sample: "New regulation impacts product compliance requirements." },
+        { section: "Change Description", prompt: "Describe changes:", sample: "Updated materials list to include compliant alternatives." },
+        { section: "Affected Requirements", prompt: "List affected requirements:", sample: "Req-123, Req-456" },
+        { section: "Verification Plan", prompt: "Verification plan:", sample: "Lab testing and documentation review." },
+        { section: "Approval", prompt: "Approval names:", sample: "Compliance Lead, Project Sponsor" }
+      ],
+      "As Built Update": [
+        { section: "Title", prompt: "Update title:", sample: "As Built Update: Mechanical Room Layout" },
+        { section: "Background", prompt: "Background for the update:", sample: "Minor changes to pipe routing after installation." },
+        { section: "Update Details", prompt: "Details of update:", sample: "Pipe A moved 20cm left; cable tray rerouted." },
+        { section: "Documentation Changes", prompt: "Documentation updates:", sample: "Revised drawing 101-A and updated spec sheet." },
+        { section: "Compliance", prompt: "Compliance status:", sample: "All changes comply with project specifications." },
+        { section: "Sign Off", prompt: "Sign-off names:", sample: "Mechanical Lead, Construction Supervisor" }
+      ]
+    };
 
     let currentDocType = "";
     let compiledText = "";
@@ -72,7 +153,7 @@
 
     function startDocument() {
       currentDocType = document.getElementById('docType').value;
-      if (!currentDocType) return alert('Please select a document type.');
+      if (!currentDocType) { alert('Please select a document type.'); return; }
       document.getElementById('step1').classList.add("hidden");
       document.getElementById('docForm').classList.remove("hidden");
       document.getElementById('saveDriveBtn').classList.add("hidden");
@@ -160,8 +241,16 @@
       document.getElementById('step1').classList.remove("hidden");
     }
 
-    // Google Drive integration omitted for brevity (see previous solution)
-    // ...
+    // --- Event Listeners for Buttons ---
+    document.getElementById('startBtn').addEventListener('click', startDocument);
+    document.getElementById('reviewBtn').addEventListener('click', showReview);
+    document.getElementById('docForm').addEventListener('submit', compileDocument);
+
+    // Google Drive integration placeholder
+    function saveToDrive() {
+      alert("Google Drive integration not configured in this demo. See README for setup instructions.");
+      // For integration, see previous code or README.
+    }
   </script>
 </body>
 </html>
