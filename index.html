@@ -3,32 +3,182 @@
 <head>
   <meta charset="UTF-8">
   <title>Engineering Document Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: "Courier New", Courier, monospace; margin: 40px; background: #faf8f2;}
-    .container { max-width: 800px; margin: auto; }
-    .section { margin-bottom: 20px; }
-    textarea, [contenteditable] { width: 100%; min-height: 60px; font-family: inherit; }
-    #compiled, .review-doc { white-space: pre-wrap; background: #f7f7f7; padding: 20px; border-radius: 5px; font-family: inherit; }
-    button { padding: 6px 14px; font-size: 1rem; margin-right: 10px; margin-bottom: 10px;}
-    label { font-weight: bold; }
-    .hidden { display: none; }
-    #fontsize-controls button { font-size: 1.2em; }
-    .comment { font-style: italic; color: #009; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: "Courier New", Courier, monospace;
+      background: #faf8f2;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+    h1 {
+      font-size: 2em;
+      margin-bottom: 0.5em;
+      text-align: center;
+    }
+    .section {
+      margin-bottom: 20px;
+    }
+    textarea, [contenteditable] {
+      width: 100%;
+      min-height: 60px;
+      font-family: inherit;
+      font-size: 1em;
+      padding: 8px;
+      border-radius: 5px;
+      border: 1px solid #ddd;
+      box-sizing: border-box;
+      background: #fff;
+      margin-bottom: 5px;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 4px;
+    }
+    button {
+      padding: 8px 16px;
+      font-size: 1em;
+      margin-right: 8px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      border: none;
+      background: #0087ff;
+      color: #fff;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover, button:active {
+      background: #005fa3;
+    }
+    #fontsize-controls {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      justify-content: center;
+    }
+    #fontsize-controls button {
+      background: #fff;
+      color: #333;
+      border: 1px solid #bbb;
+      font-size: 1.1em;
+    }
+    #fontsize-controls button:hover {
+      background: #eee;
+    }
+    .comment {
+      font-style: italic;
+      color: #009;
+      margin-bottom: 5px;
+      display: block;
+    }
+    #compiled, .review-doc {
+      white-space: pre-wrap;
+      background: #f7f7f7;
+      padding: 20px;
+      border-radius: 5px;
+      font-family: inherit;
+      font-size: 1em;
+      word-break: break-word;
+      margin-bottom: 16px;
+    }
+    .hidden {
+      display: none !important;
+    }
     #aiPopup {
       position: fixed;
-      right: 40px;
-      bottom: 40px;
+      right: 16px;
+      bottom: 16px;
+      max-width: 90vw;
       width: 320px;
       background: #fff;
       border: 2px solid #333;
-      padding: 20px;
+      padding: 16px;
       z-index: 10;
       border-radius: 12px;
       box-shadow: 0 2px 16px rgba(0,0,0,0.15);
       transition: opacity 0.2s;
+      font-size: 1em;
+      word-break: break-word;
     }
-    #aiPopup h3 { margin-top: 0; }
-    #aiPopup button { float: right; margin-top: 10px;}
+    #aiPopup h3 {
+      margin-top: 0;
+      font-size: 1.1em;
+    }
+    #aiPopup button {
+      float: right;
+      margin-top: 10px;
+      font-size: 1em;
+      background: #0087ff;
+      color: #fff;
+      border-radius: 4px;
+      border: none;
+      padding: 5px 12px;
+    }
+    #docType {
+      font-size: 1em;
+      padding: 4px;
+      border-radius: 4px;
+      border: 1px solid #bbb;
+      margin-bottom: 8px;
+      width: 100%;
+      max-width: 400px;
+      box-sizing: border-box;
+    }
+    @media (max-width: 900px) {
+      .container {
+        max-width: 96vw;
+        padding: 8vw 2vw;
+      }
+      #aiPopup {
+        width: 90vw;
+        right: 5vw;
+        bottom: 5vw;
+        font-size: 1em;
+      }
+    }
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 1.2em;
+      }
+      .container {
+        max-width: 100vw;
+        padding: 4vw 1vw;
+      }
+      button, #docType, textarea, [contenteditable] {
+        font-size: 1em;
+      }
+      #compiled, .review-doc {
+        padding: 10px;
+        font-size: 0.95em;
+      }
+      #aiPopup {
+        width: 96vw;
+        right: 2vw;
+        bottom: 2vw;
+        padding: 10px;
+        font-size: 0.95em;
+      }
+    }
+    @media (max-width: 400px) {
+      .container {
+        padding: 2vw 1vw;
+      }
+      #aiPopup {
+        width: 98vw;
+        right: 1vw;
+        bottom: 1vw;
+        padding: 6px;
+        font-size: 0.9em;
+      }
+    }
   </style>
 </head>
 <body>
@@ -166,7 +316,6 @@
       document.getElementById('backBtnCompiled').classList.remove("hidden");
     };
 
-    // Add Back to Home logic
     document.getElementById('backBtnForm').onclick = function() {
       document.getElementById('docForm').classList.add("hidden");
       document.getElementById('step1').classList.remove("hidden");
@@ -181,7 +330,6 @@
       document.getElementById('backBtnCompiled').classList.add("hidden");
     };
 
-    // Download as TXT feature
     document.getElementById('downloadTxtBtn').onclick = function() {
       const filename = (currentDocType || "document") + ".txt";
       const blob = new Blob([compiledText], { type: "text/plain" });
@@ -193,43 +341,46 @@
       document.body.removeChild(link);
     };
 
+    // Improved AskAI Functionality
     function askAI(idx) {
-  const content = document.getElementById(`sec${idx}`).innerText.trim();
-  const sectionTitle = templates[currentDocType][idx].section.toLowerCase();
-  let suggestion = "";
-  // Section-specific advice
-  if (!content) {
-    suggestion = `Start by writing a draft for the "${sectionTitle}" section. What is the main point you want to communicate?`;
-  } else if (content.length < 40) {
-    suggestion = "Try to add more detail. Expand on your ideas and provide specific examples or context.";
-  } else if (["requirements","test steps","test equipment","design","update details","interface description"].some(s => sectionTitle.includes(s))) {
-    suggestion = "Consider using bullet points or numbered lists for clarity. Ensure each item is concise and covers all necessary details.";
-  } else if (["background","scope","purpose","objective"].some(s => sectionTitle.includes(s))) {
-    suggestion = "Provide clear context: why is this section important? What are its boundaries or goals?";
-  } else if (["results","expected results","findings"].some(s => sectionTitle.includes(s))) {
-    suggestion = "Summarize the main outcomes. Include quantitative data if available, and compare results to expectations.";
-  } else if (["conclusion","recommendations","pass/fail criteria","approval","sign off"].some(s => sectionTitle.includes(s))) {
-    suggestion = "State the final judgment, any recommendations, and who is responsible for approval. Make sure your conclusion is supported by the previous sections.";
-  } else if (["references","documentation changes"].some(s => sectionTitle.includes(s))) {
-    suggestion = "List sources or documentation clearly. Use a consistent citation format.";
-  } else {
-    // General analysis
-    const sentences = content.split(/[.!?]/).filter(s => s.trim().length);
-    if (sentences.length < 2) {
-      suggestion = "Consider splitting your text into multiple sentences for clarity and readability.";
-    } else if (/should|must|shall|required|verify/i.test(content)) {
-      suggestion = "Double-check that all requirements are testable and clearly stated.";
-    } else {
-      suggestion = "Review for clarity, technical accuracy, and completeness. If possible, get feedback from a peer.";
+      const content = document.getElementById(`sec${idx}`).innerText.trim();
+      const sectionTitle = templates[currentDocType][idx].section;
+      let suggestion = "";
+      if (!content) {
+        suggestion = `Start by writing a draft for the "${sectionTitle}" section. What is the main point you want to communicate?`;
+      } else if (content.length < 40) {
+        suggestion = "Try to add more detail. Expand on your ideas and provide specific examples or context.";
+      } else if (["Requirements","Test Steps","Test Equipment","Design","Update Details","Interface Description"].some(s => sectionTitle.toLowerCase().includes(s.toLowerCase()))) {
+        suggestion = "Consider using bullet points or numbered lists for clarity. Ensure each item is concise and covers all necessary details.";
+      } else if (["Background","Scope","Purpose","Objective"].some(s => sectionTitle.toLowerCase().includes(s.toLowerCase()))) {
+        suggestion = "Provide clear context: why is this section important? What are its boundaries or goals?";
+      } else if (["Results","Expected Results","Findings"].some(s => sectionTitle.toLowerCase().includes(s.toLowerCase()))) {
+        suggestion = "Summarize the main outcomes. Include quantitative data if available, and compare results to expectations.";
+      } else if (["Conclusion","Recommendations","Pass/Fail Criteria","Approval","Sign Off"].some(s => sectionTitle.toLowerCase().includes(s.toLowerCase()))) {
+        suggestion = "State the final judgment, any recommendations, and who is responsible for approval. Make sure your conclusion is supported by the previous sections.";
+      } else if (["References","Documentation Changes"].some(s => sectionTitle.toLowerCase().includes(s.toLowerCase()))) {
+        suggestion = "List sources or documentation clearly. Use a consistent citation format.";
+      } else {
+        const sentences = content.split(/[.!?]/).filter(s => s.trim().length);
+        if (sentences.length < 2) {
+          suggestion = "Consider splitting your text into multiple sentences for clarity and readability.";
+        } else if (/should|must|shall|required|verify/i.test(content)) {
+          suggestion = "Double-check that all requirements are testable and clearly stated.";
+        } else {
+          suggestion = "Review for clarity, technical accuracy, and completeness. If possible, get feedback from a peer.";
+        }
+      }
+      showAIPopup(suggestion);
     }
-  }
-  showAIPopup(suggestion);
-}
 
-function showAIPopup(text) {
-  document.getElementById('aiContent').innerHTML = text;
-  document.getElementById('aiPopup').classList.remove('hidden');
-};
+    function showAIPopup(text) {
+      document.getElementById('aiContent').innerHTML = text;
+      document.getElementById('aiPopup').classList.remove('hidden');
+    }
+    document.getElementById('closeAIPopupBtn').addEventListener('click', function() {
+      document.getElementById('aiPopup').classList.add('hidden');
+      document.getElementById('aiContent').innerHTML = "";
+    });
   </script>
 </body>
 </html>
