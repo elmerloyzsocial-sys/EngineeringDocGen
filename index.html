@@ -14,7 +14,6 @@
     .hidden { display: none; }
     #fontsize-controls button { font-size: 1.2em; }
     .comment { font-style: italic; color: #009; }
-    /* AI popup bottom right */
     #aiPopup {
       position: fixed;
       right: 40px;
@@ -48,11 +47,12 @@
     <form id="docForm" class="hidden">
       <div id="sections"></div>
       <button type="submit">Compile Document</button>
+      <button type="button" id="backBtnForm">Back to Home</button>
     </form>
 
     <div id="compiled" class="hidden"></div>
+    <button type="button" id="backBtnCompiled" class="hidden">Back to Home</button>
 
-    <!-- AI popup -->
     <div id="aiPopup" class="hidden">
       <h3>AI Suggestion</h3>
       <div id="aiContent"></div>
@@ -61,7 +61,6 @@
   </div>
 
   <script>
-    // Expanded engineering and systems engineering document templates
     const templates = {
       "Technical Report": [
         { section: "Title", prompt: "Enter the title of the report:", sample: "Technical Report: Analysis of Water Quality", comment:"Use a descriptive title." },
@@ -106,10 +105,8 @@
         { section: "Compliance", prompt: "Compliance status:", sample: "All changes comply with project specifications and safety codes.", comment:"Are changes compliant?" },
         { section: "Sign Off", prompt: "Sign-off names:", sample: "Project Engineer, Construction Supervisor", comment:"Who signs off?" }
       ]
-      // Add other document types as needed
     };
 
-    // Load document types
     function loadDocTypes() {
       const docType = document.getElementById('docType');
       docType.innerHTML = '<option value="">-- Select --</option>';
@@ -119,14 +116,12 @@
     }
     loadDocTypes();
 
-    // Font size controls
     let currentFontSize = 16;
     function changeFontSize(val) {
       currentFontSize += val;
       document.getElementById('mainContainer').style.fontSize = currentFontSize + "px";
     }
 
-    // Document creation
     let currentDocType = "", compiledText = "";
     document.getElementById('startBtn').onclick = startDocument;
 
@@ -135,10 +130,11 @@
       if (!currentDocType) return alert('Please select a document type.');
       document.getElementById('step1').classList.add("hidden");
       document.getElementById('docForm').classList.remove("hidden");
+      document.getElementById('compiled').classList.add("hidden");
+      document.getElementById('backBtnCompiled').classList.add("hidden");
       renderSections();
     }
 
-    // Render sections with Ask AI
     function renderSections() {
       const secDiv = document.getElementById('sections');
       secDiv.innerHTML = '';
@@ -152,7 +148,6 @@
       });
     }
 
-    // Compile document
     document.getElementById('docForm').onsubmit = function(e) {
       e.preventDefault();
       const sections = templates[currentDocType];
@@ -165,9 +160,22 @@
       document.getElementById('docForm').classList.add("hidden");
       document.getElementById('compiled').classList.remove("hidden");
       document.getElementById('compiled').textContent = output;
+      document.getElementById('backBtnCompiled').classList.remove("hidden");
     };
 
-    // --- Polished AI Help ---
+    // Add Back to Home logic
+    document.getElementById('backBtnForm').onclick = function() {
+      document.getElementById('docForm').classList.add("hidden");
+      document.getElementById('step1').classList.remove("hidden");
+      document.getElementById('compiled').classList.add("hidden");
+      document.getElementById('backBtnCompiled').classList.add("hidden");
+    };
+    document.getElementById('backBtnCompiled').onclick = function() {
+      document.getElementById('compiled').classList.add("hidden");
+      document.getElementById('step1').classList.remove("hidden");
+      document.getElementById('backBtnCompiled').classList.add("hidden");
+    };
+
     function askAI(idx) {
       const content = document.getElementById(`sec${idx}`).innerText.trim();
       let suggestion = "";
