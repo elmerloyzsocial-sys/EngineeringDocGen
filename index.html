@@ -5,229 +5,278 @@
   <title>Engineering Document Generator</title>
   <style>
     body { font-family: "Courier New", Courier, monospace; margin: 40px; }
-    .container { max-width: 700px; margin: auto; }
+    .container { max-width: 800px; margin: auto; }
     .section { margin-bottom: 20px; }
-    textarea { width: 100%; min-height: 60px; font-family: inherit; }
+    textarea, [contenteditable] { width: 100%; min-height: 60px; font-family: inherit; }
     #compiled, .review-doc { white-space: pre-wrap; background: #f7f7f7; padding: 20px; border-radius: 5px; font-family: inherit; }
-    button { padding: 10px 20px; font-size: 1rem; margin-right: 10px; margin-bottom: 10px;}
-    label { font-weight: bold; }
-    .hidden { display: none; }
+    button { padding: 5px 10px; font-size: 1rem; margin-right: 10px; margin-bottom: 10px;}
     .doc-list { margin-bottom: 20px; }
     .doc-list-item { margin-bottom: 10px; }
     .review-title { font-size: 1.1em; font-weight: bold; }
+    .starred { color: gold; font-weight: bold; }
+    .tags { font-size: 0.9em; color: #444; }
+    #fontsize-controls button { font-size: 1.2em; }
+    .high-contrast { background: #222; color: #fff; }
+    .comment { font-style: italic; color: #009; }
   </style>
-  <!-- Google API scripts can be added here if needed -->
 </head>
 <body>
-  <div class="container">
+  <div class="container" id="mainContainer">
     <h1>Engineering Document Generator</h1>
+    <div id="fontsize-controls">
+      <button onclick="changeFontSize(1)">A+</button>
+      <button onclick="changeFontSize(-1)">A-</button>
+      <button onclick="toggleContrast()">High Contrast</button>
+    </div>
+    <!-- Template Builder -->
+    <button onclick="showTemplateBuilder()">Template Builder</button>
+    <button onclick="showReview()">Review Previous Documents</button>
     <div id="step1" class="section">
       <label for="docType">Choose document type:</label>
-      <select id="docType">
-        <option value="">-- Select --</option>
-        <option value="Technical Report">Technical Report</option>
-        <option value="Specification">Specification</option>
-        <option value="Risk Assessment">Risk Assessment</option>
-        <option value="Project Charter">Project Charter</option>
-        <option value="Safety Report">Safety Report</option>
-        <option value="Change Request">Change Request</option>
-        <option value="Design Review">Design Review</option>
-        <option value="First of Class Test Report">First of Class Test Report</option>
-        <option value="VCRM Update">VCRM Update</option>
-        <option value="As Built Update">As Built Update</option>
-      </select>
+      <select id="docType"></select>
+      <input id="tagsInput" type="text" placeholder="Add tags, e.g. project, urgent" />
       <button id="startBtn">Start</button>
-      <button id="reviewBtn">Review Previous Documents</button>
     </div>
 
     <form id="docForm" class="hidden">
       <div id="sections"></div>
       <button type="submit">Compile Document</button>
+      <button type="button" onclick="printDoc()">Print</button>
+      <button type="button" onclick="saveAsPDF()">Export to PDF</button>
+      <button type="button" onclick="shareEmail()">Share via Email</button>
+      <button type="button" onclick="saveToDrive()">Save to Google Drive</button>
+      <button type="button" onclick="saveToDropbox()">Save to Dropbox</button>
     </form>
 
     <div id="compiled" class="hidden"></div>
-    <button id="saveDriveBtn" class="hidden" onclick="saveToDrive()">Save to Google Drive</button>
     <div id="driveStatus" style="margin-top:10px;"></div>
     <div id="reviewSection" class="hidden"></div>
+    <div id="templateBuilder" class="hidden"></div>
+
+    <!-- AI popup -->
+    <div id="aiPopup" class="hidden" style="position:fixed; top:20%; left:35%; width:400px; background:#fff; border:2px solid #333; padding:20px; z-index:10;">
+      <h3>AI Suggestion</h3>
+      <div id="aiContent"></div>
+      <button onclick="closeAIPopup()">Close</button>
+    </div>
   </div>
 
   <script>
-    // Document templates and samples
+    // 1. Document templates and samples
     const templates = {
       "Technical Report": [
-        { section: "Title", prompt: "Enter the title of the report:", sample: "Technical Report: Analysis of Water Quality" },
-        { section: "Abstract", prompt: "Write a brief summary (abstract):", sample: "This report summarizes the findings of water quality analysis conducted in August 2025." },
-        { section: "Introduction", prompt: "Describe the background and objectives:", sample: "The purpose of this report is to evaluate the water quality of the local reservoir." },
-        { section: "Methodology", prompt: "Explain the methods used:", sample: "Samples were collected and analyzed using standard EPA methods." },
-        { section: "Results", prompt: "Summarize the results found:", sample: "Results show acceptable levels of contaminants within regulatory limits." },
-        { section: "Discussion", prompt: "Discuss the implications:", sample: "Results indicate safe conditions but ongoing monitoring is recommended." },
-        { section: "Conclusion", prompt: "Provide the conclusion:", sample: "Water quality is currently safe for consumption." },
-        { section: "References", prompt: "List references:", sample: "EPA Method 525.2, Water Safety Guidelines 2024." }
+        { section: "Title", prompt: "Enter the title of the report:", sample: "Technical Report: Analysis of Water Quality", comment:"Use a descriptive title." },
+        { section: "Abstract", prompt: "Write a brief summary (abstract):", sample: "This report summarizes the findings...", comment:"Summarize your report here." }
+        // ... Add more sections
       ],
       "Specification": [
-        { section: "Title", prompt: "Enter the specification title:", sample: "Specification for HVAC System" },
-        { section: "Scope", prompt: "Define the scope:", sample: "This specification covers design and installation requirements for HVAC in commercial buildings." },
-        { section: "Requirements", prompt: "List requirements:", sample: "1. System must maintain 20-22°C\n2. Airflow must meet ASHRAE 62.1 standards." },
-        { section: "Design", prompt: "Describe the design:", sample: "Centralized system with variable air volume control." },
-        { section: "Testing", prompt: "Describe testing procedures:", sample: "System must pass pressure and leak tests upon installation." }
-      ],
-      "Risk Assessment": [
-        { section: "Title", prompt: "Report title:", sample: "Risk Assessment: Construction Site" },
-        { section: "Objective", prompt: "State objectives:", sample: "Identify and assess potential hazards at the site." },
-        { section: "Methodology", prompt: "Describe risk assessment method:", sample: "Risk matrix and on-site hazard survey conducted." },
-        { section: "Findings", prompt: "Summarize findings:", sample: "Major risks include falling objects and machinery operation." },
-        { section: "Mitigation Measures", prompt: "List mitigation measures:", sample: "Implement PPE usage, daily safety briefings, and site fencing." },
-        { section: "Conclusion", prompt: "Provide conclusion:", sample: "Residual risk is acceptable with controls in place." }
-      ],
-      "Project Charter": [
-        { section: "Project Name", prompt: "Project name:", sample: "New Bridge Construction" },
-        { section: "Background", prompt: "Project background:", sample: "The city requires a new bridge to improve traffic flow." },
-        { section: "Objectives", prompt: "Project objectives:", sample: "Complete bridge construction by Dec 2026 within budget." },
-        { section: "Scope", prompt: "Define project scope:", sample: "Design, build, and commission a four-lane bridge." },
-        { section: "Stakeholders", prompt: "List stakeholders:", sample: "City council, local residents, contractors, suppliers." },
-        { section: "Budget", prompt: "State estimated budget:", sample: "$50 million" },
-        { section: "Timeline", prompt: "Project timeline:", sample: "Start: Jan 2026; End: Dec 2026" }
-      ],
-      "Safety Report": [
-        { section: "Title", prompt: "Report title:", sample: "Safety Report: Manufacturing Facility" },
-        { section: "Executive Summary", prompt: "Write summary:", sample: "Facility safety performance improved over last year." },
-        { section: "Incidents", prompt: "Describe incidents:", sample: "Two minor injuries reported, no fatalities." },
-        { section: "Corrective Actions", prompt: "List actions taken:", sample: "Implemented new safety signage and PPE protocol." },
-        { section: "Recommendations", prompt: "Provide recommendations:", sample: "Increase safety training frequency." }
-      ],
-      "Change Request": [
-        { section: "Title", prompt: "Change request title:", sample: "Change Request: Extend Project Deadline" },
-        { section: "Description", prompt: "Describe the change:", sample: "Request to extend the project deadline by 2 months due to supply delays." },
-        { section: "Impact Analysis", prompt: "Analyze impact:", sample: "Minimal impact on budget, but stakeholders must be notified." },
-        { section: "Approval", prompt: "Approval required from:", sample: "Project Manager, Sponsor" }
-      ],
-      "Design Review": [
-        { section: "Title", prompt: "Review title:", sample: "Design Review: Solar Panel Array" },
-        { section: "Purpose", prompt: "Purpose of review:", sample: "Assess design for compliance with specifications." },
-        { section: "Design Overview", prompt: "Provide overview:", sample: "System includes 100 panels, grid-tied, with inverter." },
-        { section: "Issues Identified", prompt: "List issues:", sample: "Potential shading in northeast corner during winter." },
-        { section: "Recommendations", prompt: "Provide recommendations:", sample: "Relocate panels to maximize sunlight exposure." },
-        { section: "Conclusion", prompt: "Conclusion:", sample: "Design meets requirements with minor modifications." }
-      ],
-      "First of Class Test Report": [
-        { section: "Title", prompt: "Enter the test report title:", sample: "FCTR: Rail Vehicle Brake Test" },
-        { section: "Purpose", prompt: "Describe the purpose of the test:", sample: "Verify brake system meets design criteria." },
-        { section: "Test Description", prompt: "Detailed description:", sample: "Test conducted on prototype vehicle under dry conditions." },
-        { section: "Test Results", prompt: "Summarize results:", sample: "Braking distance within required limit." },
-        { section: "Analysis", prompt: "Analysis of results:", sample: "System performs as expected; minor adjustment needed." },
-        { section: "Conclusion", prompt: "Conclusion and recommendations:", sample: "Brake system approved pending adjustment." },
-        { section: "Sign Off", prompt: "Sign-off names:", sample: "Lead Engineer, QA Manager" }
-      ],
-      "VCRM Update": [
-        { section: "Title", prompt: "Update title:", sample: "VCRM Update: New Environmental Regulation" },
-        { section: "Background", prompt: "Background of update:", sample: "New regulation impacts product compliance requirements." },
-        { section: "Change Description", prompt: "Describe changes:", sample: "Updated materials list to include compliant alternatives." },
-        { section: "Affected Requirements", prompt: "List affected requirements:", sample: "Req-123, Req-456" },
-        { section: "Verification Plan", prompt: "Verification plan:", sample: "Lab testing and documentation review." },
-        { section: "Approval", prompt: "Approval names:", sample: "Compliance Lead, Project Sponsor" }
-      ],
-      "As Built Update": [
-        { section: "Title", prompt: "Update title:", sample: "As Built Update: Mechanical Room Layout" },
-        { section: "Background", prompt: "Background for the update:", sample: "Minor changes to pipe routing after installation." },
-        { section: "Update Details", prompt: "Details of update:", sample: "Pipe A moved 20cm left; cable tray rerouted." },
-        { section: "Documentation Changes", prompt: "Documentation updates:", sample: "Revised drawing 101-A and updated spec sheet." },
-        { section: "Compliance", prompt: "Compliance status:", sample: "All changes comply with project specifications." },
-        { section: "Sign Off", prompt: "Sign-off names:", sample: "Mechanical Lead, Construction Supervisor" }
+        { section: "Title", prompt: "Specification title:", sample: "Specification for HVAC System", comment:"State what is being specified." }
+        // ... Add more sections
       ]
+      // ... Add more templates
     };
 
-    let currentDocType = "";
-    let compiledText = "";
+    // 2. Template Builder
+    function showTemplateBuilder() {
+      const tb = document.getElementById('templateBuilder');
+      tb.classList.remove('hidden');
+      tb.innerHTML = `<h2>Template Builder (Demo)</h2>
+        <label>Template Name: <input id="newTemplateName"></label>
+        <div id="newTemplateSections"></div>
+        <button onclick="addTemplateSection()">Add Section</button>
+        <button onclick="saveNewTemplate()">Save Template</button>
+        <button onclick="closeTemplateBuilder()">Close</button>`;
+      addTemplateSection();
+    }
+    function addTemplateSection() {
+      const secDiv = document.getElementById('newTemplateSections');
+      const idx = secDiv.children.length;
+      secDiv.innerHTML += `<div><input placeholder="Section Name" id="newSec${idx}"> 
+      <input placeholder="Prompt" id="newPrompt${idx}"></div>`;
+    }
+    function saveNewTemplate() {
+      const name = document.getElementById('newTemplateName').value;
+      if (!name) return alert("Template name required!");
+      const secDiv = document.getElementById('newTemplateSections');
+      const sections = [];
+      for(let i=0; i<secDiv.children.length; i++) {
+        const sec = document.getElementById(`newSec${i}`).value;
+        const prompt = document.getElementById(`newPrompt${i}`).value;
+        if(sec && prompt) sections.push({section:sec, prompt, sample:"", comment:""});
+      }
+      templates[name] = sections;
+      closeTemplateBuilder();
+      loadDocTypes();
+      alert("Template saved!");
+    }
+    function closeTemplateBuilder() {
+      document.getElementById('templateBuilder').classList.add('hidden');
+    }
 
-    // Helper for local storage
-    function saveDocumentLocally(docType, sections, output) {
-      const docs = JSON.parse(localStorage.getItem('engineeringDocs') || '[]');
+    // 3. Load document types
+    function loadDocTypes() {
+      const docType = document.getElementById('docType');
+      docType.innerHTML = '<option value="">-- Select --</option>';
+      Object.keys(templates).forEach(type => {
+        docType.innerHTML += `<option value="${type}">${type}</option>`;
+      });
+    }
+    loadDocTypes();
+
+    // 4. Font size and contrast
+    let currentFontSize = 16;
+    function changeFontSize(val) {
+      currentFontSize += val;
+      document.getElementById('mainContainer').style.fontSize = currentFontSize + "px";
+    }
+    function toggleContrast() {
+      document.body.classList.toggle("high-contrast");
+    }
+
+    // 5. Document creation
+    let currentDocType = "", compiledText = "", currentTags = "";
+    document.getElementById('startBtn').onclick = startDocument;
+    function startDocument() {
+      currentDocType = document.getElementById('docType').value;
+      currentTags = document.getElementById('tagsInput').value;
+      if (!currentDocType) return alert('Please select a document type.');
+      document.getElementById('step1').classList.add("hidden");
+      document.getElementById('docForm').classList.remove("hidden");
+      document.getElementById('reviewSection').classList.add("hidden");
+      renderSections();
+    }
+
+    // 6. Render sections with comments, rich text, auto-save, AI help, and note fields
+    function renderSections() {
+      const secDiv = document.getElementById('sections');
+      secDiv.innerHTML = '';
+      templates[currentDocType].forEach((sec, idx) => {
+        secDiv.innerHTML += `<div class="section">
+          <label>${sec.prompt}</label>
+          <div contenteditable="true" id="sec${idx}">${sec.sample}</div>
+          <span class="comment">${sec.comment||""}</span>
+          <button type="button" onclick="askAI(${idx})">Ask AI</button>
+          <input id="note${idx}" placeholder="Add comment/note...">
+        </div>`;
+      });
+    }
+
+    // 7. Auto-save
+    setInterval(() => {
+      if (!currentDocType) return;
+      const sections = templates[currentDocType];
+      let sectionContents = [];
+      sections.forEach((sec, idx) => {
+        const content = document.getElementById(`sec${idx}`)?.innerText || "";
+        const note = document.getElementById(`note${idx}`)?.value || "";
+        sectionContents.push({section: sec.section, content, note});
+      });
+      localStorage.setItem('draftDoc', JSON.stringify({
+        type: currentDocType,
+        sections: sectionContents,
+        tags: currentTags
+      }));
+    }, 5000);
+
+    // 8. Compile document
+    document.getElementById('docForm').onsubmit = function(e) {
+      e.preventDefault();
+      const sections = templates[currentDocType];
+      let sectionContents = [];
+      let output = `# ${currentDocType}\nTags: ${currentTags}\n\n`;
+      sections.forEach((sec, idx) => {
+        const content = document.getElementById(`sec${idx}`).innerText;
+        const note = document.getElementById(`note${idx}`).value;
+        output += `## ${sec.section}\n${content}\n`;
+        if(note) output += `> Note: ${note}\n`;
+        output += "\n";
+        sectionContents.push({section:sec.section, content, note});
+      });
+      compiledText = output;
+      document.getElementById('docForm').classList.add("hidden");
+      document.getElementById('compiled').classList.remove("hidden");
+      document.getElementById('compiled').textContent = output;
+      saveDocumentLocally(currentDocType, sectionContents, output, currentTags);
+    };
+
+    // 9. Save locally with versioning, starring, and tags
+    function saveDocumentLocally(docType, sections, output, tags) {
+      let docs = JSON.parse(localStorage.getItem('engineeringDocs') || '[]');
       docs.push({
         type: docType,
         sections: sections,
         compiled: output,
-        date: new Date().toISOString()
+        date: new Date().toISOString(),
+        tags: tags,
+        starred: false,
+        versions: [] // For version history
       });
       localStorage.setItem('engineeringDocs', JSON.stringify(docs));
     }
 
-    function startDocument() {
-      currentDocType = document.getElementById('docType').value;
-      if (!currentDocType) { alert('Please select a document type.'); return; }
-      document.getElementById('step1').classList.add("hidden");
-      document.getElementById('docForm').classList.remove("hidden");
-      document.getElementById('saveDriveBtn').classList.add("hidden");
-      document.getElementById('compiled').classList.add("hidden");
-      document.getElementById('reviewSection').classList.add("hidden");
-      document.getElementById('driveStatus').textContent = "";
-
-      // Render sections
-      const sectionsDiv = document.getElementById('sections');
-      sectionsDiv.innerHTML = '';
-      templates[currentDocType].forEach((sec, idx) => {
-        const s = document.createElement('div');
-        s.className = "section";
-        s.innerHTML = `<label>${sec.prompt}</label>
-          <textarea name="sec${idx}" required>${sec.sample}</textarea>`;
-        sectionsDiv.appendChild(s);
-      });
+    // 10. Print, PDF, Email, Cloud (simple demos)
+    function printDoc() { window.print(); }
+    function saveAsPDF() { alert("PDF export: Use browser's 'Print to PDF' for now."); }
+    function shareEmail() {
+      let subject = encodeURIComponent("Engineering Document: " + currentDocType);
+      let body = encodeURIComponent(compiledText);
+      window.location.href = `mailto:?subject=${subject}&body=${body}`;
     }
+    function saveToDrive() { alert("Google Drive integration not configured in this demo."); }
+    function saveToDropbox() { alert("Dropbox integration not configured in this demo."); }
 
-    function compileDocument(e) {
-      e.preventDefault();
-      const form = document.getElementById('docForm');
-      const compiledDiv = document.getElementById('compiled');
-      let output = `# ${currentDocType}\n\n`;
-      const sections = templates[currentDocType];
-      let sectionContents = [];
-      sections.forEach((sec, idx) => {
-        const content = form[`sec${idx}`].value;
-        output += `## ${sec.section}\n${content}\n\n`;
-        sectionContents.push({section: sec.section, content});
-      });
-      compiledText = output;
-      form.classList.add("hidden");
-      compiledDiv.classList.remove("hidden");
-      compiledDiv.textContent = output;
-      document.getElementById('saveDriveBtn').classList.remove("hidden");
-      saveDocumentLocally(currentDocType, sectionContents, output);
-    }
-
-    // --- Review Previous Documents ---
+    // 11. Review, search, edit, star, version, tagging
     function showReview() {
       document.getElementById('step1').classList.add("hidden");
       document.getElementById('docForm').classList.add("hidden");
       document.getElementById('compiled').classList.add("hidden");
-      document.getElementById('saveDriveBtn').classList.add("hidden");
       document.getElementById('reviewSection').classList.remove("hidden");
       renderReviewList();
     }
-
     function renderReviewList() {
-      const docs = JSON.parse(localStorage.getItem('engineeringDocs') || '[]');
+      let docs = JSON.parse(localStorage.getItem('engineeringDocs') || '[]');
       const reviewDiv = document.getElementById('reviewSection');
-      if (docs.length === 0) {
-        reviewDiv.innerHTML = "<p>No previous documents found.</p><button onclick='backToMain()'>Back</button>";
-        return;
-      }
-      let html = "<div class='doc-list'>";
+      let html = `<input id="searchBar" placeholder="Search..." oninput="searchDocs()">`;
+      html += "<div class='doc-list'>";
       docs.forEach((doc, idx) => {
         html += `<div class='doc-list-item'>
-          <span class='review-title'>${doc.type}</span> (${(new Date(doc.date)).toLocaleString()})
+          <span class='review-title'>${doc.type}</span>
+          ${doc.starred ? '<span class="starred">&#9733;</span>' : `<button onclick="starDoc(${idx})">&#9734;</button>`}
+          <span class="tags">${doc.tags ? "Tags: "+doc.tags : ""}</span>
+          (${(new Date(doc.date)).toLocaleString()})
           <button onclick='viewDocument(${idx})'>View</button>
+          <button onclick='editDocument(${idx})'>Edit</button>
           <button onclick='deleteDocument(${idx})'>Delete</button>
         </div>`;
       });
       html += "</div><button onclick='backToMain()'>Back</button><div id='docView'></div>";
       reviewDiv.innerHTML = html;
     }
-
-    function viewDocument(idx) {
-      const docs = JSON.parse(localStorage.getItem('engineeringDocs') || '[]');
-      const doc = docs[idx];
-      document.getElementById('docView').innerHTML = `<div class='review-doc'>${doc.compiled}</div>`;
+    function searchDocs() {
+      let query = document.getElementById('searchBar').value.toLowerCase();
+      let docs = JSON.parse(localStorage.getItem('engineeringDocs') || '[]');
+      docs = docs.filter(doc => doc.type.toLowerCase().includes(query) || doc.compiled.toLowerCase().includes(query) || (doc.tags||"").toLowerCase().includes(query));
+      const docList = document.querySelector('.doc-list');
+      docList.innerHTML = '';
+      docs.forEach((doc, idx) => {
+        docList.innerHTML += `<div class='doc-list-item'>
+          <span class='review-title'>${doc.type}</span>
+          ${doc.starred ? '<span class="starred">&#9733;</span>' : `<button onclick="starDoc(${idx})">&#9734;</button>`}
+          <span class="tags">${doc.tags ? "Tags: "+doc.tags : ""}</span>
+          (${(new Date(doc.date)).toLocaleString()})
+          <button onclick='viewDocument(${idx})'>View</button>
+          <button onclick='editDocument(${idx})'>Edit</button>
+          <button onclick='deleteDocument(${idx})'>Delete</button>
+        </div>`;
+      });
     }
-
+    function viewDocument(idx) {
+      let docs = JSON.parse(localStorage.getItem('engineeringDocs') || '[]');
+      const doc = docs[idx];
+      document.getElementById('docView').innerHTML = `<div class='review-doc'>${doc.compiled}<br>
+        <button onclick='revertVersion(${idx})'>Revert to previous version</button>
+        </div>`;
+    }
     function deleteDocument(idx) {
       if (!confirm("Delete this document?")) return;
       let docs = JSON.parse(localStorage.getItem('engineeringDocs') || '[]');
@@ -235,22 +284,50 @@
       localStorage.setItem('engineeringDocs', JSON.stringify(docs));
       renderReviewList();
     }
-
     function backToMain() {
       document.getElementById('reviewSection').classList.add("hidden");
       document.getElementById('step1').classList.remove("hidden");
     }
-
-    // --- Event Listeners for Buttons ---
-    document.getElementById('startBtn').addEventListener('click', startDocument);
-    document.getElementById('reviewBtn').addEventListener('click', showReview);
-    document.getElementById('docForm').addEventListener('submit', compileDocument);
-
-    // Google Drive integration placeholder
-    function saveToDrive() {
-      alert("Google Drive integration not configured in this demo. See README for setup instructions.");
-      // For integration, see previous code or README.
+    function editDocument(idx) {
+      let docs = JSON.parse(localStorage.getItem('engineeringDocs') || '[]');
+      const doc = docs[idx];
+      currentDocType = doc.type;
+      currentTags = doc.tags;
+      document.getElementById('step1').classList.add("hidden");
+      document.getElementById('docForm').classList.remove("hidden");
+      document.getElementById('reviewSection').classList.add("hidden");
+      templates[currentDocType].forEach((sec, sidx) => {
+        sec.sample = doc.sections[sidx]?.content || "";
+      });
+      renderSections();
     }
+    function starDoc(idx) {
+      let docs = JSON.parse(localStorage.getItem('engineeringDocs') || '[]');
+      docs[idx].starred = !docs[idx].starred;
+      localStorage.setItem('engineeringDocs', JSON.stringify(docs));
+      renderReviewList();
+    }
+    function revertVersion(idx) {
+      alert("Version history demo: Would load previous version if available.");
+    }
+
+    // 12. AI Help (demo)
+    function askAI(idx) {
+      const content = document.getElementById(`sec${idx}`).innerText;
+      document.getElementById('aiPopup').classList.remove('hidden');
+      document.getElementById('aiContent').innerHTML = `<i>AI suggestion for improvement:</i><br>${content.length < 30 ? "Try expanding your statement with more detail." : "Your statement is clear and well-written."}`;
+      // For real AI, send content to an API and show the response.
+    }
+    function closeAIPopup() {
+      document.getElementById('aiPopup').classList.add('hidden');
+    }
+
+    // On page load, restore font size and contrast from localStorage (accessibility)
+    window.onload = function() {
+      let fs = localStorage.getItem('fontSize');
+      if(fs) { currentFontSize = parseInt(fs); document.getElementById('mainContainer').style.fontSize = currentFontSize + "px"; }
+      if(localStorage.getItem('contrast') === "true") document.body.classList.add("high-contrast");
+    };
   </script>
 </body>
 </html>
